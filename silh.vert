@@ -1,19 +1,19 @@
 #version 120
 
-out  vec3  	vN;		// normal vector
-out  vec3  	vL;		// vector from point to light
-out  vec3  	vE;		// vector from point to eye
+varying vec3 vN;
+varying vec3 vL;
+varying vec3 vE;
 
-const vec3 LightPosition	= vec3( 15. ,15. ,15.);
+uniform vec4 uLightPosition;
 
 void
 main()
 {
-	vN =  normalize( gl_NormalMatrix * gl_Normal );	// normal vector
+	vN = normalize( gl_NormalMatrix * gl_Normal );	// normal vector
 
 	vec4 ECposition = gl_ModelViewMatrix * gl_Vertex;
 
-	vL = LightPosition - ECposition.xyz;		// vector from the point to the light position
+	vL = uLightPosition.xyz - ECposition.xyz;		// FIXED: was 'LightPosition', now 'uLightPosition'
 
 	vE = vec3( 0., 0., 0. ) - ECposition.xyz;	// vector from the point to the eye position 
 

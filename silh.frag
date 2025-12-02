@@ -1,12 +1,14 @@
 #version 120
 
-uniform bool	uSilh;
-uniform bool	uSurface;
-uniform float 	uTol;
+varying vec3 vN;  // Matches vertex shader
+varying vec3 vL;
+varying vec3 vE;
 
-in  vec3  	vN;			// normal vector
-in  vec3  	vL;			// vector from point to light
-in  vec3  	vE;			// vector from point to eye
+uniform bool uSilh;
+uniform bool uSurface;
+uniform float uTol;
+uniform vec3 uColor;
+
 
 const vec3 	Color =		vec3( 0., 1., 0.8 );
 const float	Ka =		0.1;
@@ -44,14 +46,20 @@ main()
 
 // all the silhouette stuff happens below here:
 
-	if( uSilh   &&   ????? )
+	// Check if fragment is on silhouette edge
+	// When dot(Normal, Eye) is close to 0, we're looking at the edge
+	float dotNE = abs( dot(Normal, Eye) );
+	
+	if( uSilh && dotNE < uTol )
 	{
-		gl_FragColor = vec4( ?????, 1. );
+		// This fragment is on the silhouette edge - draw silhouette color
+		gl_FragColor = vec4( SilhColor, 1. );
 	}
 	else
 	{
 		if( uSurface )
-			gl_FragColor = vec4( ?????,  1. );
+
+			gl_FragColor = vec4( ambient + diffuse + specular,  1. );
 		else
 			discard;
 	}
