@@ -157,10 +157,6 @@ const GLfloat Colors[ ][3] =
 	{ 1., 0., 1. },		// magenta
 };
 
-// ------------------------ Global variables: ---------------------------
-
-// code
-
 
 // what options should we compile-in?
 // in general, you don't need to worry about these
@@ -188,6 +184,7 @@ float	Time;					// used for animation, this has a value between 0. and 1.
 int		Xmouse, Ymouse;			// mouse values
 float	Xrot, Yrot;				// rotation angles in degrees
 
+GLuint dinoList;				// display list for the dinosaur model
 
 // function prototypes:
 
@@ -298,11 +295,19 @@ TimeOfDaySeed( )
 //#include "osucube.cpp"
 //#include "osucylindercone.cpp"
 //#include "osutorus.cpp"
-//#include "bmptotexture.cpp"
-//#include "loadobjmtlfiles.cpp"
-//#include "keytime.cpp"
-//#include "glslprogram.cpp"
+#include "bmptotexture.cpp"
+#include "loadobjmtlfiles.cpp"
+#include "keytime.cpp"
+#include "glslprogram.cpp"
 //#include "vertexbufferobject.cpp"
+
+
+// ------------------------ Global variables: ---------------------------
+
+GLSLProgram Pattern;
+bool SurfaceOn = true;
+bool SilhOn = true;
+float Tolerance = 0.2;
 
 
 // main program:
@@ -407,7 +412,7 @@ Display( )
 	if( NowProjection == ORTHO )
 		glOrtho( -2.f, 2.f,     -2.f, 2.f,     0.1f, 1000.f );
 	else
-		gluPerspective( 70.f, 1.f,	0.1f, 1000.f );
+		gluPerspective( 90.f, 1.f,	0.1f, 1000.f );
 
 	// place the objects into the scene:
 
@@ -416,7 +421,7 @@ Display( )
 
 	// set the eye position, look-at position, and up-vector:
 
-	gluLookAt( 0.f, 0.f, 3.f,     0.f, 0.f, 0.f,     0.f, 1.f, 0.f );
+	gluLookAt( 0.f, 0.f, 10.f,     0.f, 0.f, 0.f,     0.f, 1.f, 0.f );
 
 	// rotate the scene:
 
@@ -441,17 +446,23 @@ Display( )
 
 	glEnable( GL_NORMALIZE );
 
-
-	//code
-
+	Pattern.Use();
+	
+	// Set uniform variables
+	Pattern.SetUniformVariable("uSurface", SurfaceOn);
+	Pattern.SetUniformVariable("uSilh", SilhOn);
+	Pattern.SetUniformVariable("uTol", Tolerance);
+	
+	// Draw the dino
+	glCallList(dinoList);
+	
+	Pattern.UnUse();
 
 	// swap the double-buffered framebuffers:
-
 	glutSwapBuffers( );
 
 	// be sure the graphics buffer has been sent:
 	// note: be sure to use glFlush( ) here, not glFinish( ) !
-
 	glFlush( );
 }
 
@@ -682,7 +693,6 @@ InitGraphics( )
 
 	glutIdleFunc( Animate );
 
-	// init the glew package (a window must be open to do this):
 
 #ifdef WIN32
 	GLenum err = glewInit( );
@@ -697,6 +707,17 @@ InitGraphics( )
 
 	// all other setups go here, such as GLSLProgram and KeyTime setups:
 
+    Pattern.Init();
+    bool valid = Pattern.Create("silh.vert", "silh.frag");
+    if (!valid)
+    {
+        fprintf(stderr, "Shader cannot be created!\n");
+    }
+    else
+    {
+        fprintf(stderr, "Shader created successfully.\n");
+    }
+
 }
 
 
@@ -707,8 +728,6 @@ InitGraphics( )
 
 void InitLists( ) {
 
-	//code
-
     // Axes remain the same
     AxesList = glGenLists(1);
     glNewList(AxesList, GL_COMPILE);
@@ -716,6 +735,9 @@ void InitLists( ) {
         Axes(1.5);
         glLineWidth(1.);
     glEndList();
+
+	dinoList = LoadObjMtlFiles( (char *)"dino.obj" );
+
 }
 
 // initialize the glui window:
@@ -793,6 +815,37 @@ Keyboard( unsigned char c, int x, int y )
 
 	switch( c )
 	{
+		case 's':
+		case 'S':
+			SurfaceOn = !SurfaceOn;
+			fprintf(stderr, "Surface: %s\n", SurfaceOn ? "ON" : "OFF");
+			break;
+
+		case 'h':
+		case 'H':
+			SilhOn = !SilhOn;
+			fprintf(stderr, "Silhouette: %s\n", SilhOn ? "ON" : "OFF");
+			break;
+
+		case 't':
+			Tolerance += 0.05f;
+			if (Tolerance > 1.0f)
+				Tolerance = 1.0f;
+			fprintf(stderr, "Tolerance: %.2f\n", Tolerance);
+			break;
+
+		case 'T':
+			Tolerance -= 0.05f;
+			if (Tolerance < 0.0f)
+				Tolerance = 0.0f;
+			fprintf(stderr, "Tolerance: %.2f\n", Tolerance);
+			break;
+
+		case 'a':
+		case 'A':
+			AxesOn = !AxesOn;
+			break;
+
 		case 'o':
 		case 'O':
 			NowProjection = ORTHO;
